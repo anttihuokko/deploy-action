@@ -14,10 +14,6 @@ jobs:
       - name: Get image tag
         id: tag
         run: echo "TAG=ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Debug
-        run: echo '---- Tag-${{ steps.tag.outputs.TAG }}-'
-
       - name: Login to ghcr.io docker repository
         uses: docker/login-action@v3
         with:

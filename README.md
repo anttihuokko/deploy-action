@@ -26,7 +26,7 @@ Run local version of the Docker image
 docker run --name deploy-action-test --rm --cap-add CAP_NET_ADMIN dev/deploy-action:latest --vault-password=$(./vault-password.sh) --security-config=$(cat test-security-config.vault | tr '\n' '|') --ssh-command=uptime
 ```
 
-### GitHub Action Testing
+### Local Action Testing
 
 Github action can be tested locally using [nektos/act](https://nektosact.com/)
 Installation: Download the `act` binary from website and add it to ~/.local/bin directory.
@@ -43,4 +43,21 @@ To stop act from prompting for the token every time you can store the token to a
 
 ```
 act -s GITHUB_TOKEN -j build-image
+```
+
+Locally run action.
+
+```
+VAULT_PASSWORD="$(./vault-password.sh)" \
+SECURITY_CONFIG=$(cat test-security-config.vault | tr '\n' '|') \
+bash -c 'act -s VAULT_PASSWORD -s SECURITY_CONFIG -j test'
+```
+
+## Releasing
+
+New version can be released by adding a new version tag. This will trigger release worflow.
+
+```
+git tag v1.0
+git push origin v1.0
 ```
