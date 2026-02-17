@@ -1,0 +1,11 @@
+[Interface]
+PrivateKey = ${WG_PRIVATE_KEY}
+Address = 10.6.0.3/32
+# DNS = 10.6.0.1
+
+[Peer]
+PublicKey = ${WG_PUBLIC_KEY}
+PresharedKey = ${WG_PRESHARED_KEY}
+AllowedIPs = 0.0.0.0/0
+Endpoint = ${WG_ENDPOINT}
+PersistentKeepalive = 25

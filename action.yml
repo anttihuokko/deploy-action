@@ -1,0 +1,27 @@
+name: Deploy Action
+description: Action to perform varios deploy operations
+inputs:
+  vault_password:
+    description: Password for opening secrets vault
+    required: true
+  security_config:
+    description: Security config vault
+    required: true
+  ssh_command:
+    description: The SSH command to execute
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Run deploy action
+      run: |
+        docker run \
+          --rm \
+          --cap-add=NET_ADMIN \
+          --workdir /__workspace \
+          -v "$GITHUB_WORKSPACE":"/__workspace":ro \
+          ghcr.io/anttihuokko/deploy-action:latest \
+          --vault-password='${{ inputs.vault_password }}' \
+          --security-config='${{ inputs.security_config }}' \
+          --ssh-command='${{ inputs.ssh_command }}'
+      shell: bash

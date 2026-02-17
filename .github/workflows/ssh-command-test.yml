@@ -1,0 +1,15 @@
+name: Test Running SSH Command
+on:
+  workflow_dispatch:
+jobs:
+  test-ssh-command:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Run action
+        uses: ./
+        with:
+          vault_password: ${{ secrets.VAULT_PASSWORD }}
+          security_config: ${{ secrets.SECURITY_CONFIG }}
+          ssh_command: uptime
