@@ -58,6 +58,5 @@ bash -c 'act -s VAULT_PASSWORD -s SECURITY_CONFIG -j test'
 New version can be released by adding a new version tag. This will trigger release worflow.
 
 ```
-git tag v1.0
-git push origin v1.0
+git tag v1.0 && git push origin v1.0
 ```

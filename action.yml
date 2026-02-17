@@ -13,18 +13,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - run: env
+    - name: Print env
       shell: bash
-
-    - run: echo "Action ref is $GITHUB_REF_NAME"
-      shell: bash
+      run: env
 
     - name: Get image version
       id: version
-      run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
       shell: bash
+      run: |
+        VERSION=$(git describe --tags --abbrev=0)
+        echo "VERSION=${VERSION#v}" >> "$GITHUB_OUTPUT"
 
     - name: Run deploy action
+      shell: bash
       run: |
 
         echo '---- Version-${{ steps.version.outputs.VERSION }}-'
@@ -39,4 +40,3 @@ runs:
           --vault-password='${{ inputs.vault_password }}' \
           --security-config='${{ inputs.security_config }}' \
           --ssh-command='${{ inputs.ssh_command }}'
-      shell: bash
