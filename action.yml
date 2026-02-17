@@ -15,12 +15,18 @@ runs:
   steps:
     - name: Run deploy action
       run: |
+        VERSION="${GITHUB_ACTION_REF#v}"
+
+
+        echo "---- Version-${VERSION}-"
+
+
         docker run \
           --rm \
           --cap-add=NET_ADMIN \
           --workdir /__workspace \
           -v "$GITHUB_WORKSPACE":"/__workspace":ro \
-          ghcr.io/anttihuokko/deploy-action:latest \
+          ghcr.io/anttihuokko/deploy-action:${VERSION} \
           --vault-password='${{ inputs.vault_password }}' \
           --security-config='${{ inputs.security_config }}' \
           --ssh-command='${{ inputs.ssh_command }}'
