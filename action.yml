@@ -17,6 +17,10 @@ runs:
       shell: bash
       run: env
 
+    - name: Test git
+      shell: bash
+      run: git describe --tags --abbrev=0
+
     - name: Get image version
       id: version
       shell: bash
