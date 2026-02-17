@@ -1,23 +1,19 @@
 name: Release
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - "version"
+    tags:
+      - "v*"
 permissions:
-  packages: write
   contents: write
+  packages: write
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Get relese version and image tag
-        id: props
-        run: |
-          VERSION=$(cat version)
-          echo "VERSION=$(cat version)" >> "$GITHUB_OUTPUT"
-          echo "TAG=ghcr.io/${{ github.repository }}:$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Get image tag
+        id: tag
+        run: echo "TAG=ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       - name: Login to ghcr.io docker repository
         uses: docker/login-action@v3
         with:
@@ -25,14 +21,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build docker image
-        run: docker build --tag ${{ steps.props.outputs.TAG }} .
+        run: docker build --tag ${{ steps.tag.outputs.TAG }} .
       - name: Push Docker image to repository
-        run: docker push ${{ steps.props.outputs.TAG }}
-      - name: Create GitHub release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: "v${{ steps.props.outputs.VERSION }}"
-          name: "Release ${{ steps.props.outputs.VERSION }}"
-          body: "Automated release triggered by version file change."
+        run: docker push ${{ steps.tag.outputs.TAG }}
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
