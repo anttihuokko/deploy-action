@@ -44,11 +44,3 @@ To stop act from prompting for the token every time you can store the token to a
 ```
 act -s GITHUB_TOKEN -j build-image
 ```
-
-Run ssh command action.
-
-```
-VAULT_PASSWORD="$(./vault-password.sh)" \
-SECURITY_CONFIG=$(cat test-security-config.vault | tr '\n' '|') \
-bash -c 'act -s VAULT_PASSWORD -s SECURITY_CONFIG -j test-ssh-command'
-```
