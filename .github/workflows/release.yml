@@ -1,8 +1,12 @@
 name: Release
 on:
+  workflow_dispatch:
   push:
     paths:
       - "version"
+permissions:
+  packages: write
+  contents: write
 jobs:
   release:
     runs-on: ubuntu-latest
