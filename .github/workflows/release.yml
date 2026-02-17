@@ -11,15 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Get image tag
-        id: tag
-        run: echo "TAG=ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Get relese version
+        id: version
+        run: echo 'VERSION=${{ github.repository }}' >> $GITHUB_OUTPUT
+      - name: Update VERSION file
+        run: echo "${{ steps.version.outputs.VERSION }}" > version
+      - name: Commit and push version file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version
+          git commit -m "Update version file to ${{ steps.version.outputs.VERSION }}"
+          git push origin HEAD:${GITHUB_REF#refs/tags/}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to ghcr.io docker repository
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get image tag
+        id: tag
+        run: echo "TAG=ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       - name: Build docker image
         run: docker build --tag ${{ steps.tag.outputs.TAG }} .
       - name: Push Docker image to repository
