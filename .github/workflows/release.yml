@@ -3,9 +3,6 @@ on:
   push:
     paths:
       - "version"
-permissions:
-  contents: write
-  packages: write
 jobs:
   release:
     runs-on: ubuntu-latest
