@@ -15,7 +15,7 @@ runs:
   steps:
     - name: Run deploy action
       env:
-        VERSION: 1.0
+        IMAGE_VERSION: "1.0"
       shell: bash
       run: |
         docker run \
@@ -23,7 +23,7 @@ runs:
           --cap-add=NET_ADMIN \
           --workdir /__workspace \
           -v "$GITHUB_WORKSPACE":"/__workspace":ro \
-          ghcr.io/anttihuokko/deploy-action:${{ env.VERSION }} \
+          ghcr.io/anttihuokko/deploy-action:${{ env.IMAGE_VERSION }} \
           --vault-password='${{ inputs.vault_password }}' \
           --security-config='${{ inputs.security_config }}' \
           --ssh-command='${{ inputs.ssh_command }}'

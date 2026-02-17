@@ -55,8 +55,7 @@ bash -c 'act -s VAULT_PASSWORD -s SECURITY_CONFIG -j test'
 
 ## Releasing
 
-The image version number needs to be updated to action.yml
-New version can be triggered by adding a new version tag.
+The image version number needs to be manually updated to `action.yml`. New release can be triggered by adding a new version tag.
 
 ```
 git tag v1.0 && git push origin v1.0
