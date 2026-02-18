@@ -1,0 +1,4 @@
+Host target
+  HostName ${SSH_SERVER_ADDRESS}
+  Port ${SSH_SERVER_PORT}
+  User ${SSH_USERNAME}

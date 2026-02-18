@@ -1,13 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-WIREGUARD_CONFIG_TEMPLATE_FILE=/etc/wireguard/wg0.conf.template
+ANSIBLE_PASSWORD_FILE=/root/.pwd
+TEMPLATES_DIR=/root/templates
 WIREGUARD_CONFIG_FILE=/etc/wireguard/wg0.conf
 SSH_DIR=/root/.ssh
+SSH_CONFIG_FILE=/root/.ssh/config
 
 vault_password=''
 security_config=''
 ssh_command=''
+ansible_tags=''
+ansible_playbook=''
+ansible_dry_run=1
 declare -A security_config_properties
 
 process_args() {
@@ -23,6 +28,18 @@ process_args() {
         ;;
       --ssh-command=*)
         ssh_command="${1#*=}"
+        shift
+        ;;
+      --ansible-tags=*)
+        ansible_tags="${1#*=}"
+        shift
+        ;;
+      --ansible-playbook=*)
+        ansible_playbook="${1#*=}"
+        shift
+        ;;
+      --ansible-dry-run=*)
+        [[ ${1#*=} == 'false' ]] && ansible_dry_run=0
         shift
         ;;
       *)
@@ -41,17 +58,26 @@ process_args() {
   fi
 }
 
+configure_ansible() {
+  echo "$vault_password" > "$ANSIBLE_PASSWORD_FILE"
+  chmod 400 "$ANSIBLE_PASSWORD_FILE"
+  export ANSIBLE_VAULT_PASSWORD_FILE="$ANSIBLE_PASSWORD_FILE"
+  export ANSIBLE_FORCE_COLOR=true
+}
+
 load_security_config_properties() {
+  local config
   local line
   local key
   local value
+  config=$(ansible-vault view <(echo "$security_config" | tr '|' '\n'))
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" != *"="* || "$line" =~ ^[[:blank:]]*#.*$ ]] && continue
     key=$(echo "${line%%=*}" | xargs)
     value=$(echo "${line#*=}" | xargs)
     [[ -z "$key" || -z "$value" ]] && continue
     security_config_properties["$key"]="$value"
-  done <<< $(ansible-vault view --vault-password-file=<(echo "$vault_password") <(echo "$security_config" | tr '|' '\n'))
+  done <<< "$config"
 }
 
 create_wireguard_config() {
@@ -59,7 +85,8 @@ create_wireguard_config() {
   WG_PUBLIC_KEY="${security_config_properties[WIREGUARD_PUBLIC_KEY]}" \
   WG_PRESHARED_KEY="${security_config_properties[WIREGUARD_PRESHARED_KEY]}" \
   WG_ENDPOINT="${security_config_properties[WIREGUARD_ENDPOINT]}" \
-  envsubst '${WG_PRIVATE_KEY} ${WG_PUBLIC_KEY} ${WG_PRESHARED_KEY} ${WG_ENDPOINT}' < "$WIREGUARD_CONFIG_TEMPLATE_FILE" > "$WIREGUARD_CONFIG_FILE"
+  envsubst '${WG_PRIVATE_KEY} ${WG_PUBLIC_KEY} ${WG_PRESHARED_KEY} ${WG_ENDPOINT}' < "$TEMPLATES_DIR/wg0.conf.template" > "$WIREGUARD_CONFIG_FILE"
+  chmod 400 "$WIREGUARD_CONFIG_FILE"
 }
 
 create_ssh_config() {
@@ -67,25 +94,48 @@ create_ssh_config() {
   echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_DIR/known_hosts
   echo "${security_config_properties[SSH_USER_PRIVATE_KEY]}" | tr '|' '\n' > "$SSH_DIR/id_ed25519"
   chmod 400 "$SSH_DIR/id_ed25519"
+  SSH_SERVER_ADDRESS="${security_config_properties[SSH_SERVER_ADDRESS]}" \
+  SSH_SERVER_PORT="${security_config_properties[SSH_SERVER_PORT]}" \
+  SSH_USERNAME="${security_config_properties[SSH_USERNAME]}" \
+  envsubst '${SSH_SERVER_ADDRESS} ${SSH_SERVER_PORT} ${SSH_USERNAME}' < "$TEMPLATES_DIR/ssh-config.template" > "$SSH_CONFIG_FILE"
+  chmod 400 "$SSH_CONFIG_FILE"
 }
 
 wireguard_up() {
-  echo '**** Starting WireGuard VPN connection ****'
+  echo '***** Starting WireGuard VPN connection *****'
   wg-quick up wg0
 }
 
 execute_ssh_command() {
-  echo '**** Executing SSH command ****'
-  ssh -p "${security_config_properties[SSH_SERVER_PORT]}" "${security_config_properties[SSH_USERNAME]}"@"${security_config_properties[SSH_SERVER_ADDRESS]}" "$ssh_command"
+  echo '***** Executing SSH command *****'
+  echo "$ssh_command"
+  ssh target "$ssh_command"
+}
+
+execute_ansible_playbook() {
+  echo '***** Executing Ansible playbook *****'
+  local cmd=(ansible-playbook --extra-vars 'host=target')
+  [[ -n "$ansible_tags" ]] && cmd+=(--tags "$ansible_tags")
+  cmd+=(--diff)
+  (( $ansible_dry_run )) && cmd+=(--check)
+  cmd+=("$ansible_playbook")
+  echo "${cmd[@]}"
+  "${cmd[@]}"
 }
 
 main() {
   process_args "$@"
+  configure_ansible
   load_security_config_properties
   create_wireguard_config
   create_ssh_config
   wireguard_up
-  execute_ssh_command
+  if [[ -n "$ssh_command" ]]; then
+    execute_ssh_command
+  fi
+  if [[ -n "$ansible_playbook" ]]; then
+    execute_ansible_playbook
+  fi
 }
 
 main "$@"

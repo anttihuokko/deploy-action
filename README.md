@@ -23,7 +23,31 @@ docker build --tag dev/deploy-action:latest .
 Run local version of the Docker image
 
 ```
-docker run --name deploy-action-test --rm --cap-add CAP_NET_ADMIN dev/deploy-action:latest --vault-password=$(./vault-password.sh) --security-config=$(cat test-security-config.vault | tr '\n' '|') --ssh-command=uptime
+docker run \
+--name deploy-action-test \
+--rm \
+--cap-add CAP_NET_ADMIN \
+--workdir /__workspace \
+-v .:"/__workspace":ro \
+dev/deploy-action:latest \
+--vault-password=$(./vault-password.sh) \
+--security-config=$(cat test-security-config.vault | tr '\n' '|') \
+--ssh-command=uptime
+```
+
+```
+docker run \
+--name deploy-action-test \
+--rm \
+--cap-add CAP_NET_ADMIN \
+--workdir /__workspace \
+-v ../env-home:"/__workspace":ro \
+dev/deploy-action:latest \
+--vault-password=$(../env-home/vault-password.sh) \
+--security-config=$(cat ../env-home/security-config.vault | tr '\n' '|') \
+--ansible-playbook=server.yml \
+--ansible-tags=system,users \
+--ansible-dry-run=true
 ```
 
 ### Local Action Testing
@@ -39,7 +63,7 @@ act --list
 
 Build image and deploy it to ghcr.io Docker repo.
 In order to permit pushing images to Docker repository you need to create a GitHub token with `write:packages` permission.
-To stop act from prompting for the token every time you can store the token to an environment variable: ` export GITHUB_TOKEN='<TOKEN>'`. Rember to prefix the command with a space so that the command in not stored in shell history.
+To stop act from prompting for the token every time you can store the token to an environment variable: ` export GITHUB_TOKEN=<TOKEN>`. Rember to prefix the command with a space so that the command in not stored in shell history.
 
 ```
 act -s GITHUB_TOKEN -j build-image
