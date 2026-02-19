@@ -1,11 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-ANSIBLE_PASSWORD_FILE=/root/.pwd
 TEMPLATES_DIR=/root/templates
+ANSIBLE_PASSWORD_FILE=/root/.pwd
 WIREGUARD_CONFIG_FILE=/etc/wireguard/wg0.conf
 SSH_DIR=/root/.ssh
-SSH_CONFIG_FILE=/root/.ssh/config
+SSH_PRIVATE_KEY_FILE="$SSH_DIR/id_ed25519"
+SSH_KNOWN_HOSTS_FILE="$SSH_DIR/known_hosts"
+SSH_CONFIG_FILE="$SSH_DIR/config"
 
 vault_password=''
 security_config=''
@@ -91,9 +93,9 @@ create_wireguard_config() {
 
 create_ssh_config() {
   mkdir -m 600 "$SSH_DIR"
-  echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_DIR/known_hosts
-  echo "${security_config_properties[SSH_USER_PRIVATE_KEY]}" | tr '|' '\n' > "$SSH_DIR/id_ed25519"
-  chmod 400 "$SSH_DIR/id_ed25519"
+  echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_KNOWN_HOSTS_FILE
+  echo "${security_config_properties[SSH_USER_PRIVATE_KEY]}" | tr '|' '\n' > "$SSH_PRIVATE_KEY_FILE"
+  chmod 400 "$SSH_PRIVATE_KEY_FILE"
   SSH_SERVER_ADDRESS="${security_config_properties[SSH_SERVER_ADDRESS]}" \
   SSH_SERVER_PORT="${security_config_properties[SSH_SERVER_PORT]}" \
   SSH_USERNAME="${security_config_properties[SSH_USERNAME]}" \
@@ -138,4 +140,22 @@ main() {
   fi
 }
 
+cleanup() {
+  exit_code=$?
+  if [[ -f "$ANSIBLE_PASSWORD_FILE" ]]; then
+    chmod 200 "$ANSIBLE_PASSWORD_FILE"
+    shred -n 10 --remove $ANSIBLE_PASSWORD_FILE
+  fi
+  if [[ -f "$WIREGUARD_CONFIG_FILE" ]]; then
+    chmod 200 "$WIREGUARD_CONFIG_FILE"
+    shred -n 10 --remove $WIREGUARD_CONFIG_FILE
+  fi
+  if [[ -f "$SSH_PRIVATE_KEY_FILE" ]]; then
+    chmod 200 "$SSH_PRIVATE_KEY_FILE"
+    shred -n 10 --remove $SSH_PRIVATE_KEY_FILE
+  fi
+  exit "$exit_code"
+}
+
+trap cleanup EXIT INT TERM
 main "$@"
