@@ -157,18 +157,13 @@ main() {
 
 cleanup() {
   exit_code=$?
-  if [[ -f "$ANSIBLE_PASSWORD_FILE" ]]; then
-    chmod 200 "$ANSIBLE_PASSWORD_FILE"
-    shred -n 10 --remove $ANSIBLE_PASSWORD_FILE
-  fi
-  if [[ -f "$WIREGUARD_CONFIG_FILE" ]]; then
-    chmod 200 "$WIREGUARD_CONFIG_FILE"
-    shred -n 10 --remove $WIREGUARD_CONFIG_FILE
-  fi
-  if [[ -f "$SSH_PRIVATE_KEY_FILE" ]]; then
-    chmod 200 "$SSH_PRIVATE_KEY_FILE"
-    shred -n 10 --remove $SSH_PRIVATE_KEY_FILE
-  fi
+  local files=("$ANSIBLE_PASSWORD_FILE" "$WIREGUARD_CONFIG_FILE" "$SSH_PRIVATE_KEY_FILE")
+  for file in "${files[@]}"; do
+    if [[ -f "$file" ]]; then
+      chmod 200 "$file"
+      shred -n 10 --remove $file
+    fi
+  done
   exit "$exit_code"
 }
 
