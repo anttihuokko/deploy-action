@@ -24,7 +24,7 @@ runs:
   steps:
     - name: Run deploy action
       env:
-        IMAGE_VERSION: "2.1"
+        IMAGE_VERSION: "2.2"
       shell: bash
       run: |
         docker run \
