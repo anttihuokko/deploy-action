@@ -89,7 +89,14 @@ load_security_config_properties() {
 
 create_ssh_config() {
   mkdir -m 600 "$SSH_DIR"
-  echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_KNOWN_HOSTS_FILE
+  if [[ "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY],,}" == 'scan' ]]; then
+    echo '**************************************************************************'
+    echo "***** Warning: Scanning host public key and adding it to known_hosts *****"
+    echo '**************************************************************************'
+    ssh-keyscan -H "${security_config_properties[SSH_SERVER_ADDRESS]}" > $SSH_KNOWN_HOSTS_FILE
+  else
+    echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_KNOWN_HOSTS_FILE
+  fi
   echo "${security_config_properties[SSH_USER_PRIVATE_KEY]}" | tr '|' '\n' > "$SSH_PRIVATE_KEY_FILE"
   chmod 400 "$SSH_PRIVATE_KEY_FILE"
   SSH_SERVER_ADDRESS="${security_config_properties[SSH_SERVER_ADDRESS]}" \
@@ -136,7 +143,7 @@ main() {
   configure_ansible
   load_security_config_properties
   create_ssh_config
-  if [[ "${security_config_properties[WIREGUARD_ENABLED]}" == 'true' ]]; then
+  if [[ "${security_config_properties[WIREGUARD_ENABLED],,}" == 'true' ]]; then
     create_wireguard_config
     wireguard_up
   fi
