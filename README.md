@@ -44,7 +44,7 @@ docker run \
 -v ../env-home:"/__workspace":ro \
 dev/deploy-action:latest \
 --vault-password=$(../env-home/vault-password.sh) \
---security-config=$(cat ../env-home/security-config.vault | tr '\n' '|') \
+--security-config=$(cat ../env-home/server-security-config.vault | tr '\n' '|') \
 --ansible-playbook=server.yml \
 --ansible-tags=system,users \
 --ansible-dry-run=true
