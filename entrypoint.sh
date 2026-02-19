@@ -87,15 +87,6 @@ load_security_config_properties() {
   done <<< "$config"
 }
 
-create_wireguard_config() {
-  WG_PRIVATE_KEY="${security_config_properties[WIREGUARD_PRIVATE_KEY]}" \
-  WG_PUBLIC_KEY="${security_config_properties[WIREGUARD_PUBLIC_KEY]}" \
-  WG_PRESHARED_KEY="${security_config_properties[WIREGUARD_PRESHARED_KEY]}" \
-  WG_ENDPOINT="${security_config_properties[WIREGUARD_ENDPOINT]}" \
-  envsubst '${WG_PRIVATE_KEY} ${WG_PUBLIC_KEY} ${WG_PRESHARED_KEY} ${WG_ENDPOINT}' < "$TEMPLATES_DIR/wg0.conf.template" > "$WIREGUARD_CONFIG_FILE"
-  chmod 400 "$WIREGUARD_CONFIG_FILE"
-}
-
 create_ssh_config() {
   mkdir -m 600 "$SSH_DIR"
   echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_KNOWN_HOSTS_FILE
@@ -106,6 +97,15 @@ create_ssh_config() {
   SSH_USERNAME="${security_config_properties[SSH_USERNAME]}" \
   envsubst '${SSH_SERVER_ADDRESS} ${SSH_SERVER_PORT} ${SSH_USERNAME}' < "$TEMPLATES_DIR/ssh-config.template" > "$SSH_CONFIG_FILE"
   chmod 400 "$SSH_CONFIG_FILE"
+}
+
+create_wireguard_config() {
+  WG_PRIVATE_KEY="${security_config_properties[WIREGUARD_PRIVATE_KEY]}" \
+  WG_PUBLIC_KEY="${security_config_properties[WIREGUARD_PUBLIC_KEY]}" \
+  WG_PRESHARED_KEY="${security_config_properties[WIREGUARD_PRESHARED_KEY]}" \
+  WG_ENDPOINT="${security_config_properties[WIREGUARD_ENDPOINT]}" \
+  envsubst '${WG_PRIVATE_KEY} ${WG_PUBLIC_KEY} ${WG_PRESHARED_KEY} ${WG_ENDPOINT}' < "$TEMPLATES_DIR/wg0.conf.template" > "$WIREGUARD_CONFIG_FILE"
+  chmod 400 "$WIREGUARD_CONFIG_FILE"
 }
 
 wireguard_up() {
@@ -135,9 +135,11 @@ main() {
   process_args "$@"
   configure_ansible
   load_security_config_properties
-  create_wireguard_config
   create_ssh_config
-  wireguard_up
+  if [[ "${security_config_properties[WIREGUARD_ENABLED]}" == 'true' ]]; then
+    create_wireguard_config
+    wireguard_up
+  fi
   if [[ -n "$ssh_command" ]]; then
     execute_ssh_command
   fi
