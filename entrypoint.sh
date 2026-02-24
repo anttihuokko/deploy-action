@@ -15,6 +15,7 @@ ssh_command=''
 ansible_tags=''
 ansible_playbook=''
 ansible_dry_run=1
+ansible_diff=0
 ansible_verbose=0
 declare -A security_config_properties
 
@@ -43,6 +44,10 @@ process_args() {
         ;;
       --ansible-dry-run=*)
         [[ ${1#*=} == 'false' ]] && ansible_dry_run=0
+        shift
+        ;;
+      --ansible-diff=*)
+        [[ ${1#*=} == 'true' ]] && ansible_diff=1
         shift
         ;;
       --ansible-verbose=*)
@@ -130,9 +135,9 @@ execute_ansible_playbook() {
   echo '***** Executing Ansible playbook *****'
   local cmd=(ansible-playbook --extra-vars 'host=target')
   [[ -n "$ansible_tags" ]] && cmd+=(--tags "$ansible_tags")
-  cmd+=(--diff)
-  (( $ansible_dry_run )) && cmd+=(--check)
-  (( $ansible_verbose )) && cmd+=(-vvv)
+  (( ansible_dry_run )) && cmd+=(--check)
+  (( ansible_diff )) && cmd+=(--diff)
+  (( ansible_verbose )) && cmd+=(-vvv)
   cmd+=("$ansible_playbook")
   echo "${cmd[@]}"
   "${cmd[@]}"
