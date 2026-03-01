@@ -82,7 +82,11 @@ load_security_config_properties() {
   local line
   local key
   local value
-  config=$(ansible-vault view <(echo "$security_config" | tr '|' '\n'))
+  if [[ -f "$security_config" ]]; then
+    config=$(ansible-vault view "$security_config")
+  else
+    config=$(ansible-vault view <(echo "$security_config" | tr '|' '\n'))
+  fi
   while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" != *"="* || "$line" =~ ^[[:blank:]]*#.*$ ]] && continue
     key=$(echo "${line%%=*}" | xargs)
@@ -127,7 +131,7 @@ wireguard_up() {
 
 execute_ssh_command() {
   echo '***** Executing SSH command *****'
-  echo "$ssh_command"
+  echo "> $ssh_command"
   ssh target "$ssh_command"
 }
 
@@ -139,7 +143,7 @@ execute_ansible_playbook() {
   (( ansible_diff )) && cmd+=(--diff)
   (( ansible_verbose )) && cmd+=(-vvv)
   cmd+=("$ansible_playbook")
-  echo "${cmd[@]}"
+  echo "> ${cmd[@]}"
   "${cmd[@]}"
 }
 

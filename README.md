@@ -31,7 +31,7 @@ docker run \
 -v .:"/__workspace":ro \
 dev/deploy-action:latest \
 --vault-password=$(./vault-password.sh) \
---security-config=$(cat test-security-config.vault | tr '\n' '|') \
+--security-config='test-security-config.vault' \
 --ssh-command=uptime
 ```
 
