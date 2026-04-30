@@ -102,7 +102,16 @@ create_ssh_config() {
     echo '**************************************************************************'
     echo "***** Warning: Scanning host public key and adding it to known_hosts *****"
     echo '**************************************************************************'
-    ssh-keyscan -H "${security_config_properties[SSH_SERVER_ADDRESS]}" > $SSH_KNOWN_HOSTS_FILE
+    scan_result=$(ssh-keyscan -T 10 -H "${security_config_properties[SSH_SERVER_ADDRESS]}" 2>/dev/null) || true
+    if [[ $? -ne 0 ]]; then
+      echo "Error: ssh-keyscan failed to execute."
+      exit 1
+    fi
+    if [[ -z "$scan_result" ]]; then
+      echo "Error: ssh-keyscan retrieved no keys. Check your network or hostname."
+      exit 1
+    fi
+    echo "$scan_result" > $SSH_KNOWN_HOSTS_FILE
   else
     echo "${security_config_properties[SSH_SERVER_PUBLIC_HOST_KEY]}" > $SSH_KNOWN_HOSTS_FILE
   fi
@@ -170,7 +179,7 @@ cleanup() {
   for file in "${files[@]}"; do
     if [[ -f "$file" ]]; then
       chmod 200 "$file"
-      shred -n 10 --remove $file
+      shred -n 10 -u $file
     fi
   done
   exit "$exit_code"
